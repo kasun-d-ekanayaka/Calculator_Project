@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASIO Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #ffffff 0%, #f2f6fc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .calculator {
+            background: rgba(3, 2, 2, 0.897);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.527);
+            border: 1px solid rgba(7, 0, 0, 0.733);
+            width: 100%;
+            max-width: 420px;
+            transition: all 0.3s ease;
+        }
+
+        .calculator.disabled {
+            opacity: 0.8;
+            filter: grayscale(50%);
+        }
+
+        .calculator-title {
+            text-align: left;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 30px;
+            font-family:'Digital-7';
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .power-status {
+            color: #4CAF50;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 16px;
+            min-height: 20px;
+            font-weight: bold;
+        }
+
+        .display {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            word-break: break-all;
+            overflow: hidden;
+            transition: opacity 0.3s ease;
+        }
+
+        .calculator.disabled .display {
+            opacity: 0.7;
+        }
+
+        .previous-operand {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+            text-align: right;
+            min-height: 24px;
+        }
+
+        .current-operand {
+            color: white;
+            font-size: 36px;
+            font-weight: bold;
+            text-align: right;
+            min-height: 42px;
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+
+        button {
+            border: none;
+            border-radius: 12px;
+            padding: 10px 8px;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            background: white;
+        }
+
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ON button  OFF button  */
+        .calculator.disabled .buttons-grid button:not(.power-on-btn):not(.power-off-btn) {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* ON button OFF button  */
+        .power-on-btn, .power-off-btn {
+            opacity: 1 !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+        }
+
+        .operation {
+            background: #FF9800;
+            color: white;
+        }
+
+        .operation:hover {
+            background: #F57C00;
+        }
+
+        .advanced {
+            background: #9C27B0;
+            color: white;
+        }
+
+        .advanced:hover {
+            background: #7B1FA2;
+        }
+
+        .equals {
+            background: #4CAF50;
+            color: white;
+            grid-column: span 2;
+        }
+
+        .equals:hover {
+            background: #45a049;
+        }
+
+        .power-off-btn {
+            background: #FF5722;
+            color: white;
+        }
+
+        .power-off-btn:hover {
+            background: #E64A19;
+        }
+
+        .power-on-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .power-on-btn:hover {
+            background: #388E3C;
+        }
+
+        .double-zero {
+            grid-column: span 1;
+        }
+
+        .history-btn {
+            background: #2196F3;
+            color: white;
+            margin-top: 15px;
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+        }
+
+        .history-btn:hover {
+            background: #1976D2;
+        }
+
+        .history-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-family: monospace;
+        }
+
+        .history-title {
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-history {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+     /* බැටරි ඉන්ඩිකේටර් */
+        .battery-section {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items:left;
+        }
+
+        .battery-container {
+            width: 100%;
+            max-width: 100px;
+            background: rgba(0, 0, 0, 0);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .battery-info {
+            display: flex;
+            justify-content: space-between;
+            color: white;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .battery-indicator {
+            width: 100%;
+            height: 8px;
+            background: rgba(3, 3, 3, 0.137);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .battery-level {
+            height: 80%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 20px;
+            transition: width 0.8s ease;
+            width: 100%;
+        }
+
+        .battery-level.low {
+            background: linear-gradient(90deg, #FF9800, #FF5722);
+        }
+
+        .battery-level.critical {
+            background: linear-gradient(90deg, #f44336, #d32f2f);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        @media (max-width: 480px) {
+            .calculator {
+                padding: 15px;
+                max-width: 95%;
+            }
+            
+            .buttons-grid {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 10px;
+            }
+            
+            button {
+                padding: 15px 8px;
+                font-size: 18px;
+            }
+            
+            .current-operand {
+                font-size: 28px;
+            }
+        }
+
+        /* විශේෂ බොත්තම් */
+        .special-btn {
+            background: #607D8B;
+            color: white;
+        }
+
+        .special-btn:hover {
+            background: #546E7A;
+        }
+
+        /* පවර් බොත්තම් */
+        .power-on-btn {
+            background: #05c00c;
+            color: white;
+        }
+
+        .power-on-btn:hover {
+            background: #388E3C;
+        }
+
+        .power-off-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .power-off-btn:hover {
+            background: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator" id="calculator">
+        <h1 class="calculator-title">CASIO</h1>
+        
+        <!-- පවර් ස්ටේටස් -->
+        <div class="power-status" id="power-status">Power ON</div>
+        
+        <div class="battery-section">
+            <div class="battery-container">
+                <div class="battery-info">
+                    <span>Battery</span>
+                    <span id="battery-percent">85%</span>
+                </div>
+                <div class="battery-indicator">
+                    <div class="battery-level" id="battery-level"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="display">
+            <div class="previous-operand" id="previous-operand"></div>
+            <div class="current-operand" id="current-operand">0</div>
+        </div>
+        
+        <div class="buttons-grid">
+            <button class="power-off-btn" id="power-off-btn">OFF</button>
+            <button class="power-on-btn" id="power-on-btn">ON</button>
+            <button class="advanced" data-action="sqrt">√x</button>
+            <button class="operation" data-operation="÷">÷</button>
+            <button class="operation" data-operation="×">×</button>
+            
+            <button data-number="7">7</button>
+            <button data-number="8">8</button>
+            <button data-number="9">9</button>
+            <button class="operation" data-operation="-">-</button>
+            <button class="operation" data-action="+">+</button>
+            
+            <button data-number="4">4</button>
+            <button data-number="5">5</button>
+            <button data-number="6">6</button>
+            <button class="special-btn" data-operation="percentage">%</button>
+            <button class="special-btn" data-action="square">x²</button>
+            
+            <button data-number="1">1</button>
+            <button data-number="2">2</button>
+            <button data-number="3">3</button>
+            <button class="special-btn" data-action="reciprocal">1/x</button>
+            <button class="special-btn" data-action="clear-entry">CE</button>
+            
+            <button class="double-zero" data-number="00">00</button>
+            <button data-number="0">0</button>
+            <button data-number=".">.</button>
+            <button class="equals" data-action="equals" rowspan="2">=</button>
+        </div>
+        
+        <button class="history-btn" id="toggle-history">mce</button>
+        
+        <div class="history-panel" id="history-panel">
+            <div class="history-title">
+                <span>Calculation History</span>
+                <button class="clear-history" id="clear-history">clear</button>
+            </div>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <script>
+        class Calculator {
+            constructor() {
+                // Display elements
+                this.previousOperandElement = document.getElementById('previous-operand');
+                this.currentOperandElement = document.getElementById('current-operand');
+                
+                // Power elements
+                this.powerStatus = document.getElementById('power-status');
+                this.calculatorElement = document.getElementById('calculator');
+                this.powerOnBtn = document.getElementById('power-on-btn');
+                this.powerOffBtn = document.getElementById('power-off-btn');
+                
+                // Battery elements
+                this.batteryLevel = document.getElementById('battery-level');
+                this.batteryPercent = document.getElementById('battery-percent');
+                
+                // History elements
+                this.historyList = document.getElementById('history-list');
+                this.historyPanel = document.getElementById('history-panel');
+                
+                // Game variables
+                this.currentOperand = '0';
+                this.previousOperand = '';
+                this.operation = undefined;
+                this.battery = 85;
+                this.memory = 0;
+                this.isOn = true; // කැල්කියුලේටරය ON ලෙස ආරම්භ කරන්න
+                
+                // Initialize
+                this.clear();
+                this.updateBattery();
+                this.setupEventListeners();
+                this.loadHistory();
+                this.updatePowerStatus();
+                
+                // Auto battery drain simulation
+                this.startBatteryDrain();
+            }
+
+            clear() {
+                this.currentOperand = '0';
+                this.previousOperand = '';
+                this.operation = undefined;
+                this.updateDisplay();
+            }
+
+            clearEntry() {
+                if (!this.isOn) return;
+                this.currentOperand = '0';
+                this.updateDisplay();
+            }
+
+            delete() {
+                if (!this.isOn) return;
+                
+                if (this.currentOperand === '0') return;
+                if (this.currentOperand.length === 1) {
+                    this.currentOperand = '0';
+                } else {
+                    this.currentOperand = this.currentOperand.slice(0, -1);
+                }
+                this.updateDisplay();
+            }
+
+            appendNumber(number) {
+                if (!this.isOn) return;
+                
+                // Handle double zero
+                if (number === '00') {
+                    if (this.currentOperand === '0') {
+                        this.currentOperand = '0';
+                    } else {
+                        this.currentOperand += '00';
+                    }
+                    this.updateDisplay();
+                    return;
+                }
+                
+                if (number === '.' && this.currentOperand.includes('.')) return;
+                
+                if (this.currentOperand === '0' && number !== '.' && number !== '00') {
+                    this.currentOperand = number;
+                } else {
+                    this.currentOperand += number;
+                }
+                this.updateDisplay();
+            }
+
+            chooseOperation(operation) {
+                if (!this.isOn) return;
+                
+                if (this.currentOperand === '') return;
+                
+                if (this.previousOperand !== '') {
+                    this.compute();
+                }
+                
+                this.operation = operation;
+                this.previousOperand = `${this.currentOperand} ${operation}`;
+                this.currentOperand = '';
+                this.updateDisplay();
+            }
+
+            compute() {
+                if (!this.isOn) return;
+                
+                let computation;
+                const prev = parseFloat(this.previousOperand);
+                const current = parseFloat(this.currentOperand);
+                
+                if (isNaN(prev) || isNaN(current)) return;
+                
+                switch (this.operation) {
+                    case '+':
+                        computation = prev + current;
+                        break;
+                    case '-':
+                        computation = prev - current;
+                        break;
+                    case '×':
+                        computation = prev * current;
+                        break;
+                    case '÷':
+                        if (current === 0) {
+                            this.showError("Not defined for 0!");
+                            return;
+                        }
+                        computation = prev / current;
+                        break;
+                    default:
+                        return;
+                }
+                
+                // Save to history
+                const historyItem = `${this.previousOperand} ${this.currentOperand} = ${computation}`;
+                this.addToHistory(historyItem);
+                
+                // Drain battery for computation
+                this.drainBattery(0.5);
+                
+                this.currentOperand = computation.toString();
+                this.operation = undefined;
+                this.previousOperand = '';
+                this.updateDisplay();
+            }
+
+            // Advanced Operations
+            calculateSquareRoot() {
+                if (!this.isOn) return;
+                
+                const current = parseFloat(this.currentOperand);
+                if (isNaN(current)) return;
+                
+                if (current < 0) {
+                    this.showError("Negative number!");   
+                    return;
+                }
+                
+                const computation = Math.sqrt(current);
+                const historyItem = `√(${current}) = ${computation}`;
+                this.addToHistory(historyItem);
+                
+                this.drainBattery(0.5);
+                this.currentOperand = computation.toString();
+                this.updateDisplay();
+            }
+
+            calculateSquare() {
+                if (!this.isOn) return;
+                
+                const current = parseFloat(this.currentOperand);
+                if (isNaN(current)) return;
+                
+                const computation = current * current;
+                const historyItem = `(${current})² = ${computation}`;
+                this.addToHistory(historyItem);
+                
+                this.drainBattery(0.5);
+                this.currentOperand = computation.toString();
+                this.updateDisplay();
+            }
+
+            calculatePercentage() {
+                if (!this.isOn) return;
+                
+                const current = parseFloat(this.currentOperand);
+                if (isNaN(current)) return;
+                
+                const computation = current / 100;
+                const historyItem = `${current}% = ${computation}`;
+                this.addToHistory(historyItem);
+                
+                this.drainBattery(0.5);
+                this.currentOperand = computation.toString();
+                this.updateDisplay();
+            }
+
+            calculateReciprocal() {
+                if (!this.isOn) return;
+                
+                const current = parseFloat(this.currentOperand);
+                if (isNaN(current)) return;
+                
+                if (current === 0) {
+                    this.showError("Not defined for 0!");
+                    return;
+                }
+                
+                const computation = 1 / current;
+                const historyItem = `1/(${current}) = ${computation}`;
+                this.addToHistory(historyItem);
+                
+                this.drainBattery(0.5);
+                this.currentOperand = computation.toString();
+                this.updateDisplay();
+            }
+
+            getDisplayNumber(number) {
+                if (number === '') return '';
+                
+                const stringNumber = number.toString();
+                const integerDigits = parseFloat(stringNumber.split('.')[0]);
+                const decimalDigits = stringNumber.split('.')[1];
+                
+                let integerDisplay;
+                if (isNaN(integerDigits)) {
+                    integerDisplay = '';
+                } else {
+                    integerDisplay = integerDigits.toLocaleString('si', {
+                        maximumFractionDigits: 0
+                    });
+                }
+                
+                if (decimalDigits != null) {
+                    return `${integerDisplay}.${decimalDigits}`;
+                } else {
+                    return integerDisplay;
+                }
+            }
+
+            updateDisplay() {
+                this.currentOperandElement.textContent = 
+                    this.getDisplayNumber(this.currentOperand);
+                
+                if (this.operation != null) {
+                    this.previousOperandElement.textContent = 
+                        `${this.getDisplayNumber(this.previousOperand.split(' ')[0])} ${this.operation}`;
+                } else {
+                    this.previousOperandElement.textContent = '';
+                }
+            }
+
+            // Power Management
+            isPoweredOn() {
+                return this.isOn && this.battery > 0;
+            }
+
+            updatePowerStatus() {
+                if (this.isOn && this.battery > 0) {
+                    this.powerStatus.textContent = 'POWER ON';
+                    this.powerStatus.style.color = '#4CAF50';
+                    this.calculatorElement.classList.remove('disabled');
+                    this.currentOperandElement.textContent = this.getDisplayNumber(this.currentOperand);
+                } else {
+                    this.powerStatus.textContent = 'POWER OFF';
+                    this.powerStatus.style.color = '#f44336';
+                    this.calculatorElement.classList.add('disabled');
+                    this.currentOperandElement.textContent = 'OFF';
+                    this.previousOperandElement.textContent = '';
+                    
+                    if (this.battery <= 0) {
+                        this.powerStatus.textContent = 'Battery Low! Please Charge';
+                        this.isOn = false;
+                    }
+                }
+            }
+
+            powerOn() {
+                if (this.battery <= 0) {
+                    this.showError("Battery Low! Please Charge");
+                    return;
+                }
+                this.isOn = true;
+                this.updatePowerStatus();
+                this.clear();
+                console.log("Calculator turned ON");
+            }
+
+            powerOff() {
+                this.isOn = false;
+                this.updatePowerStatus();
+                this.hideHistoryPanel();
+                console.log("Calculator turned OFF");
+            }
+
+            // Battery Management
+            updateBattery() {
+                this.batteryLevel.style.width = `${this.battery}%`;
+                this.batteryPercent.textContent = `${Math.round(this.battery)}%`;
+                
+                // Update battery color based on level
+                this.batteryLevel.classList.remove('low', 'critical');
+                if (this.battery <= 20) {
+                    this.batteryLevel.classList.add('critical');
+                } else if (this.battery <= 40) {
+                    this.batteryLevel.classList.add('low');
+                }
+                
+                // Update power status if battery is dead
+                if (this.battery <= 0 && this.isOn) {
+                    this.powerOff();
+                }
+            }
+
+            drainBattery(amount) {
+                if (!this.isOn) return;
+                
+                this.battery -= amount;
+                if (this.battery < 0) this.battery = 0;
+                this.updateBattery();
+                this.updatePowerStatus();
+            }
+
+            chargeBattery() {
+                this.battery = 100;
+                this.updateBattery();
+                this.updatePowerStatus();
+                this.showMessage("Fully Charged!");
+            }
+
+            startBatteryDrain() {
+                // Simulate battery drain over time
+                setInterval(() => {
+                    if (this.isOn) {
+                        this.drainBattery(0.1); // Drain slowly when on
+                    }
+                }, 60000); // Every minute
+            }
+
+            // History Management
+            addToHistory(item) {
+                const history = this.getHistory();
+                history.unshift({
+                    id: Date.now(),
+                    calculation: item,
+                    time: new Date().toLocaleTimeString('si-LK')
+                });
+                
+                // Keep only last 20 items
+                if (history.length > 20) {
+                    history.pop();
+                }
+                
+                localStorage.setItem('calculator-history', JSON.stringify(history));
+                this.updateHistoryDisplay();
+            }
+
+            getHistory() {
+                return JSON.parse(localStorage.getItem('calculator-history')) || [];
+            }
+
+            updateHistoryDisplay() {
+                const history = this.getHistory();
+                this.historyList.innerHTML = '';
+                
+                if (history.length === 0) {
+                    this.historyList.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">ඉතිහාසය හිස්ය</div>';
+                    return;
+                }
+                
+                history.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.innerHTML = `
+                        <div style="color: #666; font-size: 12px;">${item.time}</div>
+                        <div>${item.calculation}</div>
+                    `;
+                    this.historyList.appendChild(div);
+                });
+            }
+
+            clearHistory() {
+                localStorage.removeItem('calculator-history');
+                this.updateHistoryDisplay();
+            }
+
+            loadHistory() {
+                this.updateHistoryDisplay();
+            }
+
+            hideHistoryPanel() {
+                this.historyPanel.style.display = 'none';
+            }
+
+            // UI Helpers
+            showError(message) {
+                const originalText = this.currentOperandElement.textContent;
+                this.currentOperandElement.textContent = message;
+                this.currentOperandElement.style.color = '#f44336';
+                
+                setTimeout(() => {
+                    this.currentOperandElement.textContent = originalText;
+                    this.currentOperandElement.style.color = 'white';
+                }, 2000);
+            }
+
+            showMessage(message) {
+                const originalText = this.powerStatus.textContent;
+                this.powerStatus.textContent = message;
+                
+                setTimeout(() => {
+                    this.powerStatus.textContent = originalText;
+                }, 3000);
+            }
+
+            // Event Listeners
+            setupEventListeners() {
+                // Number buttons (including 00)
+                document.querySelectorAll('[data-number]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        this.appendNumber(button.getAttribute('data-number'));
+                    });
+                });
+
+                // Operation buttons
+                document.querySelectorAll('[data-operation]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        this.chooseOperation(button.getAttribute('data-operation'));
+                    });
+                });
+
+                // Action buttons
+                document.querySelector('[data-action="equals"]').addEventListener('click', () => {
+                    this.compute();
+                });
+
+                // Advanced operation buttons
+                document.querySelector('[data-action="sqrt"]').addEventListener('click', () => {
+                    this.calculateSquareRoot();
+                });
+
+                document.querySelector('[data-action="square"]').addEventListener('click', () => {
+                    this.calculateSquare();
+                });
+
+                // Percentage button - fixed to use correct attribute
+                document.querySelector('[data-operation="percentage"]').addEventListener('click', () => {
+                    this.calculatePercentage();
+                });
+
+                document.querySelector('[data-action="reciprocal"]').addEventListener('click', () => {
+                    this.calculateReciprocal();
+                });
+
+                document.querySelector('[data-action="clear-entry"]').addEventListener('click', () => {
+                    this.clearEntry();
+                });
+
+                // Power buttons - ALWAYS clickable
+                this.powerOnBtn.addEventListener('click', () => {
+                    console.log("ON button clicked, isOn was:", this.isOn);
+                    this.powerOn();
+                });
+
+                this.powerOffBtn.addEventListener('click', () => {
+                    console.log("OFF button clicked, isOn was:", this.isOn);
+                    this.powerOff();
+                });
+
+                // History buttons
+                document.getElementById('toggle-history').addEventListener('click', () => {
+                    if (!this.isOn) return;
+                    
+                    this.historyPanel.style.display = 
+                        this.historyPanel.style.display === 'block' ? 'none' : 'block';
+                });
+
+                document.getElementById('clear-history').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.clearHistory();
+                });
+
+                // Battery charge (double click on battery)
+                this.batteryLevel.parentElement.addEventListener('dblclick', () => {
+                    this.chargeBattery();
+                });
+
+                // Keyboard support
+                document.addEventListener('keydown', (event) => {
+                    // Power on with 'O' key
+                    if (event.key.toLowerCase() === 'o') {
+                        event.preventDefault();
+                        this.powerOn();
+                        return;
+                    }
+                    
+                    // Power off with 'F' key
+                    if (event.key.toLowerCase() === 'f') {
+                        event.preventDefault();
+                        this.powerOff();
+                        return;
+                    }
+                    
+                    // Charge battery with 'C' key
+                    if (event.key.toLowerCase() === 'c' && event.ctrlKey) {
+                        event.preventDefault();
+                        this.chargeBattery();
+                        return;
+                    }
+                    
+                    // Advanced operations with keys
+                    if (event.key.toLowerCase() === 'r') {
+                        event.preventDefault();
+                        this.calculateSquareRoot();
+                        return;
+                    }
+                    
+                    if (event.key.toLowerCase() === 's') {
+                        event.preventDefault();
+                        this.calculateSquare();
+                        return;
+                    }
+                    
+                    if (event.key === '%') {
+                        event.preventDefault();
+                        this.calculatePercentage();
+                        return;
+                    }
+                    
+                    if (event.key === '0' && event.shiftKey) {
+                        event.preventDefault();
+                        this.appendNumber('00');
+                        return;
+                    }
+                    
+                    // Clear entry with 'Delete' key
+                    if (event.key === 'Delete') {
+                        event.preventDefault();
+                        this.clearEntry();
+                        return;
+                    }
+                    
+                    // Only process other keys if powered on
+                    if (!this.isOn) return;
+                    
+                    if (event.key >= '0' && event.key <= '9') {
+                        this.appendNumber(event.key);
+                    } else if (event.key === '.') {
+                        this.appendNumber('.');
+                    } else if (event.key === '+' || event.key === '-') {
+                        this.chooseOperation(event.key);
+                    } else if (event.key === '*') {
+                        this.chooseOperation('×');
+                    } else if (event.key === '/') {
+                        event.preventDefault();
+                        this.chooseOperation('÷');
+                    } else if (event.key === 'Enter' || event.key === '=') {
+                        event.preventDefault();
+                        this.compute();
+                    } else if (event.key === 'Backspace') {
+                        this.delete();
+                    } else if (event.key === 'Escape') {
+                        this.clear();
+                    }
+                });
+            }
+        }
+
+        // Initialize calculator when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new Calculator();
+        });
+    </script>
+</body>
+</html>
